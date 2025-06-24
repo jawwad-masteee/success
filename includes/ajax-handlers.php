@@ -582,7 +582,7 @@ class CODVerifierAjax {
         wp_send_json_success();
     }
     
-    // NEW: Payment Status Polling
+    // NEW: Payment Status Polling - Enhanced to handle success/failed statuses
     public function check_payment_status() {
         if (!wp_verify_nonce($_POST['nonce'], 'cod_verifier_nonce')) {
             wp_send_json_error(__('Security check failed.', 'cod-verifier'));
@@ -595,10 +595,16 @@ class CODVerifierAjax {
         
         $token_paid = isset($_SESSION['cod_token_paid']) ? $_SESSION['cod_token_paid'] : false;
         
-        if ($token_paid) {
+        // Enhanced status reporting for frontend animations
+        if ($token_paid === true) {
             wp_send_json_success(array(
                 'status' => 'success',
                 'message' => __('Payment completed successfully!', 'cod-verifier')
+            ));
+        } elseif ($token_paid === 'failed') {
+            wp_send_json_success(array(
+                'status' => 'failed',
+                'message' => __('Payment failed. Please try again.', 'cod-verifier')
             ));
         } else {
             wp_send_json_success(array(

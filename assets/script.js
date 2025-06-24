@@ -532,22 +532,26 @@
                 },
                 success: function(response) {
                     console.log('Payment polling response:', response);
-                    if (response.success && response.data.status === 'success') {
-                        console.log('Payment polling: Success status received.');
-                        showPaymentSuccess();
-                        stopPaymentPolling();
-                    } else if (response.success && response.data.status === 'failed') {
-                         console.log('Payment polling: Failed status received.');
-                         showModalError(response.data.message || 'Payment failed.');
-                         stopPaymentPolling();
-                    } else {
-                         console.log('Payment polling: Pending or other status.');
+                    if (response.success) {
+                        // Check for specific status values
+                        if (response.data.status === 'success') {
+                            console.log('Payment polling: Success status received.');
+                            showPaymentSuccess();
+                            stopPaymentPolling();
+                        } else if (response.data.status === 'failed') {
+                            console.log('Payment polling: Failed status received.');
+                            const errorMessage = response.data.message || 'Payment failed. Please try again.';
+                            showModalError(errorMessage);
+                            stopPaymentPolling();
+                        } else {
+                            console.log('Payment polling: Pending or other status.');
+                        }
                     }
                 },
-                 error: function(xhr, status, error) {
-                     console.error('Payment polling AJAX error:', status, error);
-                     // Optionally show a generic error in the modal after a few failed attempts
-                 }
+                error: function(xhr, status, error) {
+                    console.error('Payment polling AJAX error:', status, error);
+                    // Continue polling on AJAX errors, don't show error to user
+                }
             });
         }, 5000); // Poll every 5 seconds
     }
@@ -564,7 +568,7 @@
     }
     
     function showPaymentSuccess() {
-        // Update modal content to show success
+        // Update modal content to show success animation
         $('.cod-modal-content').html(`
             <div class="cod-success-animation">
                 <div class="cod-success-icon">✅</div>
@@ -574,16 +578,23 @@
             </div>
         `);
         
-        // Close modal after 5 seconds
+        // Auto-close modal after 5 seconds and update checkout UI
         setTimeout(() => {
             closeTokenModal();
+            
+            // Update verification status and enable checkout
             updateVerificationStatus();
             hideWarningMessage();
             enablePlaceOrderButton();
+            
+            // Mark token as confirmed in the main UI
+            $('#cod_token_confirmed').prop('checked', true);
+            updateVerificationStatus();
         }, 5000);
     }
     
     function showModalError(message) {
+        // Update modal content to show error animation
         $('.cod-modal-content').html(`
             <div class="cod-error-animation">
                 <div class="cod-error-icon">❌</div>
@@ -799,17 +810,32 @@
         .cod-success-animation h3 {
             color: #28a745;
             margin-bottom: 15px;
+            font-size: 24px;
         }
         
         .cod-error-animation h3 {
             color: #dc3545;
             margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        .cod-success-animation p {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .cod-error-animation p {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 16px;
         }
         
         .cod-closing-message {
             color: #6c757d;
             font-size: 14px;
             margin-top: 15px;
+            font-style: italic;
         }
         
         @keyframes bounce {
